@@ -1,0 +1,1490 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Parameters:
+  ProjectName: 
+    Description: Used as a prefix for project resources.  Can be up to 12 characters, lowercase letters (a-z) only.
+    Type: String
+    Default: mydining
+    AllowedPattern: "^[a-z]{1,12}"
+    ConstraintDescription: The ProjectName can be up to 12 characters, lowercase letters (a-z) only.
+  S3BucketName:
+    Description: Used as the name for the staging S3 bucket. Can be up to 63 characters, lowercase letters (a-z) only.
+    Type: String
+    Default: s3bucketname
+    AllowedPattern: "^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
+    ConstraintDescription: The S3 Bucket Name can be up to 63 characters, lowercase letters (a-z) only.
+Resources:
+# ---------- ROLES FOR DYNAMODB ---------
+  DynamoDbRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub '${ProjectName}-DynamoDbLambda'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - 'arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess'
+      Policies:
+        - PolicyName: PutRidePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:PutItem'
+                  - 'dynamodb:Query'
+                  - 'dynamodb:UpdateTable'
+                  - 'dynamodb:UpdateItem'
+                  - 'dynamodb:BatchWriteItem'
+                  - 'dynamodb:GetItem'
+                  - 'dynamodb:Scan'
+                  - 'dynamodb:DeleteItem'
+                Resource:
+                  - !GetAtt 
+                    - TMenu
+                    - Arn
+                  - !GetAtt 
+                    - TOrders
+                    - Arn
+                  - !GetAtt 
+                    - TCart
+                    - Arn
+                  - !GetAtt 
+                    - TTable
+                    - Arn
+                  - !Join 
+                    - ''
+                    - - !GetAtt 
+                        - TMenu
+                        - Arn
+                      - /*
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 07b29683-0ea5-44bf-a439-fcb89713fd09
+
+# ---------- DYNAMODB TABLES DEFINITIONS ---------
+  TMenu:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: !Sub '${ProjectName}-Menu'
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: category_name
+          AttributeType: S
+        - AttributeName: featured
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      GlobalSecondaryIndexes:
+        - IndexName: featured-id-index
+          KeySchema:
+            - AttributeName: featured
+              KeyType: HASH
+            - AttributeName: id
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+        - IndexName: category-index
+          KeySchema:
+            - AttributeName: category_name
+              KeyType: HASH
+            - AttributeName: id
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 9de25578-c943-42f5-9ec7-7a5258c7771a
+  TOrders:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: !Sub '${ProjectName}-Orders'
+      AttributeDefinitions:
+        - AttributeName: customerId
+          AttributeType: S
+        - AttributeName: orderId
+          AttributeType: S
+        - AttributeName: orderStatus
+          AttributeType: S
+      KeySchema:
+        - AttributeName: customerId
+          KeyType: HASH
+        - AttributeName: orderId
+          KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      LocalSecondaryIndexes:
+        - IndexName: customerId-orderStatus-index
+          KeySchema:
+            - AttributeName: customerId
+              KeyType: HASH
+            -
+              AttributeName: orderStatus
+              KeyType: RANGE
+          Projection:
+            ProjectionType: "ALL"
+      GlobalSecondaryIndexes:
+        - IndexName: orderStatus-orderId-index
+          KeySchema:
+            - AttributeName: orderStatus
+              KeyType: HASH
+            - AttributeName: orderId
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 57fb3162-6a2d-4651-a9c8-7404e82181e8
+  TCart:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: !Sub '${ProjectName}-Cart'
+      AttributeDefinitions:
+        - AttributeName: customerId
+          AttributeType: S
+        - AttributeName: bookId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: customerId
+          KeyType: HASH
+        - AttributeName: bookId
+          KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: e1a45038-ec76-464d-91b5-6b31bc325fa7
+
+  TTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: !Sub '${ProjectName}-Table'
+      AttributeDefinitions:
+        - AttributeName: customerId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: customerId
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+        #
+
+# ---------- LAMBDA for DYNAMODB FUNCTIONS ---------         
+  FunctionListOrders:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: !Sub '${ProjectName}-ListOrders'
+      Description: Get list of books ordered by customerId
+      Handler: index.handler
+      MemorySize: 256
+      Runtime: nodejs12.x
+      CodeUri: ../lambda/noDAX/ListOrders/function.zip
+      Role: !GetAtt 
+        - DynamoDbRole
+        - Arn
+      Timeout: 120
+      Environment:
+        Variables:
+          TABLE_NAME: !Sub '${ProjectName}-Orders'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: f873825f-3037-47b0-90b4-fca6924fb4e9
+  FunctionUpdateOrderState:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: !Sub '${ProjectName}-UpdateOrderState'
+      Description: Update the Order State 
+      Handler: index.handler
+      MemorySize: 256
+      Runtime: nodejs12.x
+      CodeUri: ../lambda/noDAX/UpdateOrderState/function.zip
+      Role: !GetAtt 
+        - DynamoDbRole
+        - Arn
+      Timeout: 120
+      Environment:
+        Variables:
+          TABLE_NAME: !Sub '${ProjectName}-Orders'
+  FunctionGetTable:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: !Sub '${ProjectName}-GetTable'
+      Description: Get table number for customer id
+      Handler: index.handler
+      MemorySize: 256
+      Runtime: nodejs12.x
+      CodeUri: ../lambda/noDAX/GetTable/function.zip
+      Role: !GetAtt 
+        - DynamoDbRole
+        - Arn
+      Timeout: 120
+      Environment:
+        Variables:
+          TABLE_NAME: !Sub '${ProjectName}-Table'
+  FunctionUpdateTable:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: !Sub '${ProjectName}-UpdateTable'
+      Description: Set table number for customer id
+      Handler: index.handler
+      MemorySize: 256
+      Runtime: nodejs12.x
+      CodeUri: ../lambda/noDAX/UpdateTable/function.zip
+      Role: !GetAtt 
+        - DynamoDbRole
+        - Arn
+      Timeout: 120
+      Environment:
+        Variables:
+          TABLE_NAME: !Sub '${ProjectName}-Table'
+  FunctionGetMenuItem:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: !Sub '${ProjectName}-GetMenuItem'
+      Description: Get menu item by id
+      Handler: index.handler
+      MemorySize: 256
+      Runtime: nodejs12.x
+      CodeUri: ../lambda/noDAX/GetMenuItem/function.zip
+      Role: !GetAtt 
+        - DynamoDbRole
+        - Arn
+      Timeout: 120
+      Environment:
+        Variables:
+          TABLE_NAME: !Sub '${ProjectName}-Menu'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 1ae22cac-5803-4077-a6fe-1a3ca1aedfc2
+  FunctionListMenu:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: !Sub '${ProjectName}-ListMenuItems'
+      Description: Get list of books by category
+      Handler: index.handler
+      MemorySize: 256
+      Runtime: nodejs12.x
+      Role: !GetAtt 
+        - DynamoDbRole
+        - Arn
+      Timeout: 120
+      Environment:
+        Variables:
+          TABLE_NAME: !Sub '${ProjectName}-Menu'
+      CodeUri: ../lambda/noDAX/ListMenuItems/function.zip
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 8e306d11-6d48-49e0-8f69-760139c83447
+  FunctionUpdateCart:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: !Sub '${ProjectName}-UpdateCart'
+      Description: Update Customer's cart
+      Handler: index.handler
+      MemorySize: 256
+      Runtime: nodejs12.x
+      Role: !GetAtt 
+        - DynamoDbRole
+        - Arn
+      Timeout: 120
+      Environment:
+        Variables:
+          TABLE_NAME: !Sub '${ProjectName}-Cart'
+      CodeUri: ../lambda/noDAX/UpdateCart/function.zip
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 92605ac3-2103-491b-8593-c1ed98181425
+  FunctionGetCartItem:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: !Sub '${ProjectName}-GetCartItem'
+      Description: Get item in cart by customer and book id
+      Handler: index.handler
+      MemorySize: 256
+      Runtime: nodejs12.x
+      Role: !GetAtt 
+        - DynamoDbRole
+        - Arn
+      Timeout: 120
+      Environment:
+        Variables:
+          TABLE_NAME: !Sub '${ProjectName}-Cart'
+      CodeUri: ../lambda/noDAX/GetCartItem/function.zip
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: e64608f0-5134-4c91-8f3c-4d03408c8236
+  FunctionListItemsInCart:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: !Sub '${ProjectName}-ListOrdersInCart'
+      Description: Get list of items in cart
+      Handler: index.handler
+      MemorySize: 256
+      Runtime: nodejs12.x
+      CodeUri: ../lambda/noDAX/ListOrdersInCart/function.zip
+      Role: !GetAtt 
+        - DynamoDbRole
+        - Arn
+      Timeout: 120
+      Environment:
+        Variables:
+          TABLE_NAME: !Sub '${ProjectName}-Cart'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: e64608f0-5134-4c91-8f3c-4d03408c8236
+  FunctionAddToCart:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: !Sub '${ProjectName}-AddToCart'
+      Description: Add a book to cart
+      Handler: index.handler
+      MemorySize: 256
+      Runtime: nodejs12.x
+      CodeUri: ../lambda/noDAX/AddToCart/function.zip
+      Role: !GetAtt 
+        - DynamoDbRole
+        - Arn
+      Timeout: 120
+      Environment:
+        Variables:
+          TABLE_NAME: !Sub '${ProjectName}-Cart'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: e64608f0-5134-4c91-8f3c-4d03408c8236
+  FunctionRemoveFromCart:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: !Sub '${ProjectName}-RemoveFromCart'
+      Description: Remove a book from cart
+      Handler: index.handler
+      MemorySize: 256
+      Runtime: nodejs12.x
+      CodeUri: ../lambda/noDAX/RemoveFromCart/function.zip
+      Role: !GetAtt 
+        - DynamoDbRole
+        - Arn
+      Timeout: 120
+      Environment:
+        Variables:
+          TABLE_NAME: !Sub '${ProjectName}-Cart'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: e64608f0-5134-4c91-8f3c-4d03408c8236
+  FunctionCheckout:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: !Sub '${ProjectName}-Checkout'
+      Description: Get list of books ordered by customerId
+      Handler: index.handler
+      MemorySize: 256
+      Runtime: nodejs12.x
+      Role: !GetAtt 
+        - DynamoDbRole
+        - Arn
+      Timeout: 120
+      Environment:
+        Variables:
+          ORDERS_TABLE: !Sub '${ProjectName}-Orders'
+          CART_TABLE: !Sub '${ProjectName}-Cart'
+      CodeUri: ../lambda/noDAX/Checkout/function.zip
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 9c3f4191-a370-4344-a5b1-626228919c45
+  FunctionUploadMenuItems:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: !Sub '${ProjectName}-UploadMenuItems'
+      Description: Upload sample data for books
+      Handler: index.handler
+      Runtime: nodejs12.x
+      Role: !GetAtt 
+        - DynamoDbRole
+        - Arn
+      Timeout: 120
+      Environment:
+        Variables:
+          TABLE_NAME: !Sub '${ProjectName}-Menu'
+          S3_BUCKET: !Sub '${S3BucketName}'
+          MENU_KEY: 'menuitems.json'
+      CodeUri: ../lambda/noDAX/uploadMenuItems/function.zip
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 9c3f4191-a370-4344-a5b1-626228919c47
+        #
+ # ---------- LAMBDA PERMISSIONS ---------    
+  FunctionListOrdersPermissions:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref FunctionListOrders
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join 
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref AppApi
+          - /*
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 06a821b7-638e-471c-ab50-51710b73767c
+  FunctionGetTablePermissions:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref FunctionGetTable
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join 
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref AppApi
+          - /*
+  FunctionUpdateTablePermissions:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref FunctionUpdateTable
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join 
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref AppApi
+          - /* 
+  FunctionGetMenuItemPermissions:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref FunctionGetMenuItem
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join 
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref AppApi
+          - /*
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 06a821b7-638e-471c-ab50-51710b73767c
+  FunctionListMenuPermissions:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref FunctionListMenu
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join 
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref AppApi
+          - /*
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 06a821b7-638e-471c-ab50-51710b73767c
+  FunctionUpdateCartPermissions:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref FunctionUpdateCart
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join 
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref AppApi
+          - /*
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 06a821b7-638e-471c-ab50-51710b73767c
+  FunctionGetCartItemPermissions:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref FunctionGetCartItem
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join 
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref AppApi
+          - /*
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 06a821b7-638e-471c-ab50-51710b73767c
+  FunctionListItemsInCartPermissions:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref FunctionListItemsInCart
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join 
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref AppApi
+          - /*
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 06a821b7-638e-471c-ab50-51710b73767c
+  FunctionAddToCartPermissions:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref FunctionAddToCart
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join 
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref AppApi
+          - /*
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 06a821b7-638e-471c-ab50-51710b73767c
+  FunctionRemoveFromCartPermissions:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref FunctionRemoveFromCart
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join 
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref AppApi
+          - /*
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 06a821b7-638e-471c-ab50-51710b73767c
+  FunctionCheckoutPermissions:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref FunctionCheckout
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join 
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref AppApi
+          - /*
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 06a821b7-638e-471c-ab50-51710b73767c
+  FunctionUpdateOrderStatePermissions:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref FunctionUpdateOrderState
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join 
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref AppApi
+          - /*
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 06a821b7-638e-471c-ab50-51710b73767c
+
+ # ---------- API GATEWAY ---------         
+  AppApi:
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties:
+      Name: !Sub '${ProjectName}-DiningMenu'
+      Description: API used for Dining requests
+      FailOnWarnings: true
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 3e7a32d4-9e4d-4ecc-89b2-77203c5d926b
+  TableApiRequestGET:
+    DependsOn:
+      - FunctionGetTable
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: GET
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Join 
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions/'
+            - !GetAtt 
+              - FunctionGetTable
+              - Arn
+            - /invocations
+        IntegrationResponses:
+          - StatusCode: 200
+      ResourceId: !Ref TableApiResource
+      RestApiId: !Ref AppApi
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+  TableApiRequestOPTIONS:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      ResourceId: !Ref TableApiResource
+      RestApiId: !Ref AppApi
+      AuthorizationType: None
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: >-
+                'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
+              method.response.header.Access-Control-Allow-Methods: '''GET,POST,PUT,DELETE,OPTIONS,HEAD,PATCH'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            ResponseTemplates:
+              application/json: ''
+            StatusCode: '200'
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: '200'
+  TableApiRequestPOST:
+    DependsOn:
+      - FunctionUpdateTable
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: POST
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Join 
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions/'
+            - !GetAtt 
+              - FunctionUpdateTable
+              - Arn
+            - /invocations
+        IntegrationResponses:
+          - StatusCode: 200
+      ResourceId: !Ref TableApiResource
+      RequestParameters:
+        method.request.path.bookId: false
+      RestApiId: !Ref AppApi
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+  MenuApiRequestGET:
+    DependsOn:
+      - FunctionListOrdersPermissions
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: GET
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Join 
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions/'
+            - !GetAtt 
+              - FunctionListMenu
+              - Arn
+            - /invocations
+        IntegrationResponses:
+          - StatusCode: 200
+      RequestParameters:
+        method.request.querystring.category: false
+      ResourceId: !Ref MenuApiResource
+      RestApiId: !Ref AppApi
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 5a740957-6b64-4ddd-bd1d-3027df7fc6d5
+  MenuApiRequestOPTIONS:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      ResourceId: !Ref MenuApiResource
+      RestApiId: !Ref AppApi
+      AuthorizationType: None
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: >-
+                'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
+              method.response.header.Access-Control-Allow-Methods: '''GET,POST,PUT,DELETE,OPTIONS,HEAD,PATCH'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            ResponseTemplates:
+              application/json: ''
+            StatusCode: '200'
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: '200'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: f0f16a94-104a-431f-8c87-930f56274955
+  MenuItemApiRequestGET:
+    DependsOn: FunctionGetMenuItemPermissions
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: GET
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Join 
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions/'
+            - !GetAtt 
+              - FunctionGetMenuItem
+              - Arn
+            - /invocations
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates:
+              application/json: $input.json('$.body')
+      RequestParameters:
+        method.request.path.id: true
+      ResourceId: !Ref MenuItemApiResource
+      RestApiId: !Ref AppApi
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: a311ee38-d902-4856-9f09-1d00d1bc8600
+  MenuItemApiRequestOPTIONS:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      ResourceId: !Ref MenuItemApiResource
+      RestApiId: !Ref AppApi
+      AuthorizationType: None
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: >-
+                'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
+              method.response.header.Access-Control-Allow-Methods: '''GET,POST,PUT,DELETE,OPTIONS,HEAD,PATCH'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            ResponseTemplates:
+              application/json: ''
+            StatusCode: '200'
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: '200'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: c31e25ac-e338-4d21-9e4b-881a16e0a494
+  OrdersApiRequestGET:
+    DependsOn: FunctionListOrdersPermissions
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: GET
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Join 
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions/'
+            - !GetAtt 
+              - FunctionListOrders
+              - Arn
+            - /invocations
+        IntegrationResponses:
+          - StatusCode: 200
+      ResourceId: !Ref OrdersApiResource
+      RestApiId: !Ref AppApi
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 9007f88f-407a-4ab7-9ebb-ce6fa13b223e
+  OrdersApiRequestPOST:
+    DependsOn: FunctionCheckoutPermissions
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: POST
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Join 
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions/'
+            - !GetAtt 
+              - FunctionCheckout
+              - Arn
+            - /invocations
+        IntegrationResponses:
+          - StatusCode: 200
+      ResourceId: !Ref OrdersApiResource
+      RestApiId: !Ref AppApi
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 454289ef-fb5c-4a1f-941d-4016ebc9cf24
+  OrdersApiRequestOPTIONS:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      ResourceId: !Ref OrdersApiResource
+      RestApiId: !Ref AppApi
+      AuthorizationType: None
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: >-
+                'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
+              method.response.header.Access-Control-Allow-Methods: '''GET,POST,PUT,DELETE,OPTIONS,HEAD,PATCH'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            ResponseTemplates:
+              application/json: ''
+            StatusCode: '200'
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: '200'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: e97bf15c-b88b-48b7-b6d8-bffcaa87b24f
+  CartApiRequestGET:
+    DependsOn: FunctionListItemsInCartPermissions
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: GET
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Join 
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions/'
+            - !GetAtt 
+              - FunctionListItemsInCart
+              - Arn
+            - /invocations
+        IntegrationResponses:
+          - StatusCode: 200
+      ResourceId: !Ref CartApiResource
+      RestApiId: !Ref AppApi
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 3023c794-550d-4066-8a59-c139f4f54616
+  CartApiRequestPOST:
+    DependsOn: FunctionAddToCartPermissions
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: POST
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Join 
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions/'
+            - !GetAtt 
+              - FunctionAddToCart
+              - Arn
+            - /invocations
+        IntegrationResponses:
+          - StatusCode: 200
+      ResourceId: !Ref CartApiResource
+      RestApiId: !Ref AppApi
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 49458e1d-a6a5-4c44-96b5-f1e3f6c694a8
+  CartApiRequestPUT:
+    DependsOn: FunctionUpdateCartPermissions
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: PUT
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Join 
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions/'
+            - !GetAtt 
+              - FunctionUpdateCart
+              - Arn
+            - /invocations
+        IntegrationResponses:
+          - StatusCode: 200
+      ResourceId: !Ref CartApiResource
+      RestApiId: !Ref AppApi
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 6a4462a7-45d0-4bd9-a08a-03cd5621e0ce
+  CartApiRequestDELETE:
+    DependsOn: FunctionRemoveFromCartPermissions
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: DELETE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Join 
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions/'
+            - !GetAtt 
+              - FunctionRemoveFromCart
+              - Arn
+            - /invocations
+        IntegrationResponses:
+          - StatusCode: 200
+      RequestParameters:
+        method.request.path.id: true
+      ResourceId: !Ref CartApiResource
+      RestApiId: !Ref AppApi
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: a6392891-b014-4ea9-93a2-831f602268aa
+  CartApiRequestOPTIONS:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      ResourceId: !Ref CartApiResource
+      RestApiId: !Ref AppApi
+      AuthorizationType: None
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: >-
+                'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
+              method.response.header.Access-Control-Allow-Methods: '''GET,POST,PUT,DELETE,OPTIONS,HEAD,PATCH'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            ResponseTemplates:
+              application/json: ''
+            StatusCode: '200'
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: '200'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 97efc723-a637-41c7-b712-3af9363a1702
+  CartItemApiRequestGET:
+    DependsOn: FunctionGetCartItemPermissions
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: GET
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Join 
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions/'
+            - !GetAtt 
+              - FunctionGetCartItem
+              - Arn
+            - /invocations
+        IntegrationResponses:
+          - StatusCode: 200
+      RequestParameters:
+        method.request.path.bookId: true
+      ResourceId: !Ref CartItemApiResource
+      RestApiId: !Ref AppApi
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: acebdfda-9b64-45f8-a888-3d1251bba41a
+  CartItemApiRequestOPTIONS:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      ResourceId: !Ref CartItemApiResource
+      RestApiId: !Ref AppApi
+      AuthorizationType: None
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: >-
+                'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
+              method.response.header.Access-Control-Allow-Methods: '''GET,POST,PUT,DELETE,OPTIONS,HEAD,PATCH'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            ResponseTemplates:
+              application/json: ''
+            StatusCode: '200'
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: '200'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 0e6ce8f6-0271-439e-afcf-4e4d23c1edc3
+  OrderStateApiRequestPUT:
+    DependsOn: FunctionUpdateOrderStatePermissions
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: GET
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: PUT
+        Uri: !Join 
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions/'
+            - !GetAtt 
+              - FunctionUpdateOrderState
+              - Arn
+            - /invocations
+        IntegrationResponses:
+          - StatusCode: 200
+      RequestParameters:
+        method.request.querystring.q: false
+      ResourceId: !Ref OrderStateApiResource
+      RestApiId: !Ref AppApi
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+  OrderStateApiRequestOPTIONS:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      ResourceId: !Ref OrderStateApiResource
+      RestApiId: !Ref AppApi
+      AuthorizationType: None
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: >-
+                'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
+              method.response.header.Access-Control-Allow-Methods: '''GET,POST,PUT,DELETE,OPTIONS,HEAD,PATCH'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            ResponseTemplates:
+              application/json: ''
+            StatusCode: '200'
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: '200'
+          
+  TableApiResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref AppApi
+      ParentId: !GetAtt 
+        - AppApi
+        - RootResourceId
+      PathPart: table
+  MenuApiResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref AppApi
+      ParentId: !GetAtt 
+        - AppApi
+        - RootResourceId
+      PathPart: menuItem
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: e0ffbcc7-5f62-43ac-b377-47ec80a5a71e
+  MenuItemApiResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref AppApi
+      ParentId: !Ref MenuApiResource
+      PathPart: '{id}'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 25b4ecc5-9d47-49cb-b5c4-d03574eee62e
+  OrdersApiResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref AppApi
+      ParentId: !GetAtt 
+        - AppApi
+        - RootResourceId
+      PathPart: orders
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: cecab4d7-120d-48b2-99d9-1152b429cebc
+
+  OrderStateApiResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref AppApi
+      ParentId: !Ref OrdersApiResource 
+      PathPart: '{id}'
+      PathPart: bestsellers 
+
+  CartApiResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref AppApi
+      ParentId: !GetAtt 
+        - AppApi
+        - RootResourceId
+      PathPart: cart
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 9747c416-4f2e-45b1-bc9d-16335256f1db
+  CartItemApiResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref AppApi
+      ParentId: !Ref CartApiResource
+      PathPart: '{bookId}'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: a79e1eec-10b0-4593-9ea4-9c6b82c0ec8b
+
+  ApiAuthorizer:
+    Type: 'AWS::ApiGateway::Authorizer'
+    Properties:
+      AuthorizerResultTtlInSeconds: 300
+      IdentitySource: method.request.header.Authorization
+      Name: CognitoDefaultUserPoolAuthorizer
+      ProviderARNs:
+        - !GetAtt 
+          - UserPool
+          - Arn
+      RestApiId: !Ref AppApi
+      Type: COGNITO_USER_POOLS
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 03db03b0-3367-4eb8-bfa1-82df7efc4df4
+  APIDeployment:
+    DependsOn:
+      - MenuApiRequestGET
+      - MenuApiRequestOPTIONS
+      - MenuItemApiRequestGET
+      - MenuItemApiRequestOPTIONS
+      - OrdersApiRequestGET
+      - OrdersApiRequestPOST
+      - OrdersApiRequestOPTIONS
+      - CartApiRequestGET
+      - CartApiRequestPUT
+      - CartApiRequestPOST
+      - CartApiRequestDELETE
+      - CartApiRequestOPTIONS
+      - CartItemApiRequestGET
+      - CartItemApiRequestOPTIONS
+      - TableApiRequestGET
+      - TableApiRequestOPTIONS
+      - TableApiRequestPOST
+      - OrderStateApiRequestPUT
+      - OrderStateApiRequestOPTIONS
+    Type: 'AWS::ApiGateway::Deployment'
+    Properties:
+      Description: Prod deployment for API
+      RestApiId: !Ref AppApi
+      StageName: prod
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 278dda65-02c9-49fa-a19c-3dd7afd25683
+
+# ---------- COGNITO DEFINITIONS ---------           
+  SNSRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - cognito-idp.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: CognitoSNSPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: 'sns:publish'
+                Resource: '*'
+  UserPool:
+    Type: 'AWS::Cognito::UserPool'
+    Properties:
+      UserPoolName: !Sub '${ProjectName}-user-pool'
+      UsernameAttributes:
+        - email
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+        InviteMessageTemplate:
+          EmailMessage: 'Your username is {username} and temporary password is {####}. '
+          EmailSubject: Your temporary password
+          SMSMessage: 'Your username is {username} and temporary password is {####}.'
+        UnusedAccountValidityDays: 7
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: false
+          RequireNumbers: false
+          RequireSymbols: false
+          RequireUppercase: false
+      AutoVerifiedAttributes:
+        - email
+      EmailVerificationMessage: 'Here is your verification code: {####}'
+      EmailVerificationSubject: Your verification code
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Mutable: false
+          Required: true
+  UserPoolClient:
+    Type: 'AWS::Cognito::UserPoolClient'
+    Properties:
+      ClientName: !Sub '${ProjectName}-client'
+      GenerateSecret: false
+      UserPoolId: !Ref UserPool
+  IdentityPool:
+    Type: 'AWS::Cognito::IdentityPool'
+    Properties:
+      IdentityPoolName: !Sub '${ProjectName}Identity'
+      AllowUnauthenticatedIdentities: true
+      CognitoIdentityProviders:
+        - ClientId: !Ref UserPoolClient
+          ProviderName: !GetAtt 
+            - UserPool
+            - ProviderName
+  CognitoUnAuthorizedRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                'cognito-identity.amazonaws.com:aud': !Ref IdentityPool
+              'ForAnyValue:StringLike':
+                'cognito-identity.amazonaws.com:amr': unauthenticated
+      Policies:
+        - PolicyName: CognitoUnauthorizedPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'mobileanalytics:PutEvents'
+                  - 'cognito-sync:*'
+                Resource: '*'
+  CognitoAuthorizedRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                'cognito-identity.amazonaws.com:aud': !Ref IdentityPool
+              'ForAnyValue:StringLike':
+                'cognito-identity.amazonaws.com:amr': authenticated
+      Policies:
+        - PolicyName: CognitoAuthorizedPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'mobileanalytics:PutEvents'
+                  - 'cognito-sync:*'
+                  - 'cognito-identity:*'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'execute-api:Invoke'
+                Resource: !Join 
+                  - ''
+                  - - 'arn:aws:execute-api:'
+                    - !Ref 'AWS::Region'
+                    - ':'
+                    - !Ref 'AWS::AccountId'
+                    - ':'
+                    - !Ref AppApi
+                    - /*
+  IdentityPoolRoleMapping:
+    Type: 'AWS::Cognito::IdentityPoolRoleAttachment'
+    Properties:
+      IdentityPoolId: !Ref IdentityPool
+      Roles:
+        authenticated: !GetAtt 
+          - CognitoAuthorizedRole
+          - Arn
+        unauthenticated: !GetAtt 
+          - CognitoUnAuthorizedRole
+          - Arn

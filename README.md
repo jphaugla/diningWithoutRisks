@@ -80,7 +80,7 @@ This app is not completely automated.  Several scripts are needed.  The scripts 
 2. Get this github repository 
 ```bash
 git clone https://github.com/jphaugla/diningWithoutRisks.git
-cd diningWithoutRisks
+cd diningWithoutRisks/template
 ```
 3. Run the scripts to create the application
     1. Set environment variables by editing and running environment script
@@ -96,14 +96,29 @@ cd diningWithoutRisks
 ./cfnpackage.sh
 ./cfndeploy.sh
 ```
+    4. Upload the menu items
+```bash
+ aws s3 cp ../data/menuitems.json s3://$S3_BUCKET
+ ```
     4. Create the code commit and build pipelines
 ```bash
 ./cfnwebassetsdeploy.sh
 ```
-    5. Create codecommit and git repository for the application code and check in the code.   This will be a separate repository from the current git repository.  Start by getting back to the main directory for git repositories.
+    5. Create codecommit and git repository for the application code and check in the code.   This will be a separate repository from the current git repository.  Start by getting back to the main directory for git repositories.  Get the repository git repository by going to code commit, finding hte webAssets Dining repository and click on the HTTPS.  Use this copied string to clone the repository.
 ```bash
-cd ..
-
+cd ../..
+git clone https://git-codecommit.us-east-1.amazonaws.com/v1/repos/webAssetsDining
+cd webAssetsDining
+```
+this will reply that repository is empty.  We will fix that now!
+    6.  Copy webassets code to newly created repository 
+```bash
+cp -rp ../diningWithoutRisks/webAssets/package-lock.json ../diningWithoutRisks/webAssets/package.json ../diningWithoutRisks/webAssets/public ../diningWithoutRisks/webAssets/readmeImages ../diningWithoutRisks/webAssets/src ../diningWithoutRisks/webAssets/tsconfig.json .
+git add --all
+git commit -m "initial checking"
+git push origin
+```
+    7.  Kick off a build on the committed code
 4. Choose **Create stack**.  This will take ~20 minutes to complete.
 5. Sign into your application 
     1. The output of the CloudFormation stack creation will provide a CloudFront URL (in the *Outputs* section of your stack details page).  Copy and paste the CloudFront URL into your browser.
@@ -112,15 +127,11 @@ cd ..
 
 &nbsp;
 
-*Advanced: The source CloudFormation template is available [here](https://s3.amazonaws.com/aws-bookstore-demo/master-fullstack.template). If you want to maintain low latency for your app, [this deeplink](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=MyDiningWithoutRisks&templateURL=https://s3.amazonaws.com/aws-bookstore-demo/master-fullstack-with-lambda-triggers.template) will create an identical stack, but with additional triggers to keep the Lamdba functions "warm" (CloudFormation template [here](https://s3.amazonaws.com/aws-bookstore-demo/master-fullstack-with-lambda-triggers.template)).  For more information, see the [Considerations for demo purposes](#considerations-for-demo-purposes) section.*
-
-&nbsp;
-
 ### Cleaning up
 
 To tear down your application and remove all resources associated with the AWS DiningWithoutRisks Demo App, follow these steps:
 
-1. Log into the AWS CloudFormation Console and find the stack you created for the demo app
+1. Log into the AWS CloudFormation Console and find the stacks you created for the demo app
 2. Delete the stack
     1. Double-check that the S3 buckets created for the stack were successfully removed.
 
@@ -148,11 +159,11 @@ Remember to shut down/remove all related resources once you are finished to avoi
 
 **Frontend**
 
-Build artifacts are stored in a S3 bucket where web application assets are maintained (like book cover photos, web graphics, etc.). Amazon CloudFront caches the frontend content from S3, presenting the application to the user via a CloudFront distribution.  The frontend interacts with Amazon Cognito and Amazon API Gateway only.  Amazon Cognito is used for all authentication requests, whereas API Gateway (and Lambda) is used for all API calls interacting across DynamoDB, ElasticSearch, ElastiCache, and Neptune. 
+Build artifacts are stored in a S3 bucket where web application assets are maintained (like book cover photos, web graphics, etc.). Amazon CloudFront caches the frontend content from S3, presenting the application to the user via a CloudFront distribution.  The frontend interacts with Amazon Cognito and Amazon API Gateway only.  Amazon Cognito is used for all authentication requests, whereas API Gateway (and Lambda) is used for all API calls interacting across DynamoDB, 
 
 **Backend**
 
-The core of the backend infrastructure consists of Amazon Cognito, Amazon DynamoDB, AWS Lambda, and Amazon API Gateway. The application leverages Amazon Cognito for user authentication, and Amazon DynamoDB to store all of the data for books, orders, and the checkout cart. As books and orders are added, Amazon DynamoDB Streams push updates to AWS Lambda functions that update the Amazon Elasticsearch cluster and Amazon ElasticCache for Redis cluster.  Amazon Elasticsearch powers search functionality for books, and Amazon Neptune stores information on a user's social graph and book purchases to power recommendations. Amazon ElasticCache for Redis powers the books leaderboard. 
+The core of the backend infrastructure consists of Amazon Cognito, Amazon DynamoDB, AWS Lambda, and Amazon API Gateway. The application leverages Amazon Cognito for user authentication, and Amazon DynamoDB to store all of the data for menu items, orders, and the checkout cart. 
 
 ![Backend Diagram](assets/readmeImages/BackendDiagram.png)
 
@@ -170,25 +181,21 @@ The code is hosted in AWS CodeCommit. AWS CodePipeline builds the web applicatio
 
 &nbsp;
 
-## Implementation details
-
-*Note: The provided CloudFormation template contains only a portion of the resources needed to create and run the application.  There are web assets (images, etc.), Lambda functions, and other resources called from the template to create the full experience.  These resources are stored in a public-facing S3 bucket and referenced in the template.*
-
-&nbsp;
 
 ### Amazon DynamoDB
 
 The backend of the AWS DiningWithoutRisks Demo App leverages Amazon DynamoDB to enable dynamic scaling and the ability to add features as we rapidly improve our e-commerce application. The application create three tables in DynamoDB: Books, Orders, and Cart.  DynamoDB's primary key consists of a partition (hash) key and an optional sort (range) key. The primary key (partition and sort key together) must be unique.
 
-**Books Table:**
+** Menu Table:**
 
 ```js
-BooksTable {
+MenuTable {
   id: string (primary partition key)
-  author: string
   category: string (index, GSI)
-  cover: string (url to s3 file)
+  fullImage: string (url to s3 file)
   name: string 
+  menuName: string 
+  menuId: string (primary partition key)
   price: number
   rating: number
 }

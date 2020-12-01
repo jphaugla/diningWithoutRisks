@@ -116,12 +116,15 @@ cd webAssetsDining
 this will reply that repository is empty.  We will fix that now!
     8.  Copy webassets code to newly created repository 
 ```bash
-cp -rp ../diningWithoutRisks/webAssets/package-lock.json ../diningWithoutRisks/webAssets/package.json ../diningWithoutRisks/webAssets/public ../diningWithoutRisks/webAssets/readmeImages ../diningWithoutRisks/webAssets/src ../diningWithoutRisks/webAssets/tsconfig.json .
+cp -rp ../diningWithoutRisks/webAssets/package-lock.json ../diningWithoutRisks/webAssets/package.json ../diningWithoutRisks/webAssets/public ../diningWithoutRisks/webAssets/readmeImages ../diningWithoutRisks/webAssets/src ../diningWithoutRisks/webAssets/tsconfig.json
 git add --all
 git commit -m "initial checking"
 git push origin
 ```
-    9.  Kick off a build on the committed code
+    9. Modify two files that must be changed for the new environment: src/config.ts and src/config.js
+       make sure to add these files with git add and to commit and push the change
+    10.  Kick off a build on the committed code
+       Go to the code build and edit the build script for the new environment
 5. Sign into your application 
     1. The output of the CloudFormation stack creation will provide a CloudFront URL (in the *Outputs* section of your stack details page).  Copy and paste the CloudFront URL into your browser.
     2. You can sign into your application by registering an email address and a password.  Choose **Sign up to explore the demo** to register.  The registration/login experience is run in your AWS account, and the supplied credentials are stored in Amazon Cognito.  *Note: given that this is a demo application, we highly suggest that you do not use an email and password combination that you use for other purposes (such as an AWS account, email, or e-commerce site).*

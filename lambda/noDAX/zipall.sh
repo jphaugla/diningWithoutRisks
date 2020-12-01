@@ -2,6 +2,7 @@
 ./zipdir.sh Checkout
 ./zipdir.sh GetCartItem
 ./zipdir.sh GetMenuItem
+./zipdir.sh GetBestSeller
 ./zipdir.sh GetTable
 ./zipdir.sh ListMenuItems
 ./zipdir.sh ListOrders

@@ -235,6 +235,22 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: !Sub '${ProjectName}-Orders'
+  FunctionGetBestSeller:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: !Sub '${ProjectName}-GetBestSeller'
+      Description: Get featured items
+      Handler: index.handler
+      MemorySize: 256
+      Runtime: nodejs12.x
+      CodeUri: ../lambda/noDAX/GetBestSeller/function.zip
+      Role: !GetAtt 
+        - DynamoDbRole
+        - Arn
+      Timeout: 120
+      Environment:
+        Variables:
+          TABLE_NAME: !Sub '${ProjectName}-Menu'
   FunctionGetTable:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -663,6 +679,62 @@ Resources:
     Metadata:
       'AWS::CloudFormation::Designer':
         id: 3e7a32d4-9e4d-4ecc-89b2-77203c5d926b
+  BestSellerApiRequestGET:
+    DependsOn:
+      - FunctionGetBestSeller
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: GET
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Join 
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions/'
+            - !GetAtt 
+              - FunctionGetBestSeller
+              - Arn
+            - /invocations
+        IntegrationResponses:
+          - StatusCode: 200
+      ResourceId: !Ref BestSellerApiResource
+      RestApiId: !Ref AppApi
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+  BestSellerApiRequestOPTIONS:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      ResourceId: !Ref BestSellerApiResource
+      RestApiId: !Ref AppApi
+      AuthorizationType: None
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: >-
+                'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
+              method.response.header.Access-Control-Allow-Methods: '''GET,POST,PUT,DELETE,OPTIONS,HEAD,PATCH'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            ResponseTemplates:
+              application/json: ''
+            StatusCode: '200'
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: '200'
   TableApiRequestGET:
     DependsOn:
       - FunctionGetTable
@@ -1238,6 +1310,14 @@ Resources:
             method.response.header.Access-Control-Allow-Origin: true
           StatusCode: '200'
           
+  BestSellerApiResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref AppApi
+      ParentId: !GetAtt 
+        - AppApi
+        - RootResourceId
+      PathPart: bestsellers
   TableApiResource:
     Type: 'AWS::ApiGateway::Resource'
     Properties:

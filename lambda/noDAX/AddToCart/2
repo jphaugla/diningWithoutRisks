@@ -1,0 +1,37 @@
+{
+    "FunctionName": "jphmenu-AddToCart",
+    "FunctionArn": "arn:aws:lambda:us-east-1:569119288395:function:jphmenu-AddToCart",
+    "Runtime": "nodejs12.x",
+    "Role": "arn:aws:iam::569119288395:role/jphmenu-DynamoDbLambda",
+    "Handler": "index.handler",
+    "CodeSize": 7859548,
+    "Description": "Add a book to cart",
+    "Timeout": 120,
+    "MemorySize": 256,
+    "LastModified": "2020-11-19T16:32:45.074+0000",
+    "CodeSha256": "xfPQ9OWdQ4sXC9FnXZLmjvv1gnx74SKUoR9voB+tFVg=",
+    "Version": "$LATEST",
+    "VpcConfig": {
+        "SubnetIds": [
+            "subnet-00b186933535dffa8",
+            "subnet-0f277d34df4867d5b"
+        ],
+        "SecurityGroupIds": [
+            "sg-0ffdb761884e0cf24"
+        ],
+        "VpcId": "vpc-0a5a4a6715753038f"
+    },
+    "Environment": {
+        "Variables": {
+            "TABLE_NAME": "jphmenu-Cart",
+            "DAXENDPOINT": "jphmenucluster.br4vky.clustercfg.dax.use1.cache.amazonaws.com:8111",
+            "REGION": "us-east-1"
+        }
+    },
+    "TracingConfig": {
+        "Mode": "PassThrough"
+    },
+    "RevisionId": "1edde6e8-fc1d-4ea8-b157-2a13419cfa8d",
+    "State": "Active",
+    "LastUpdateStatus": "Successful"
+}

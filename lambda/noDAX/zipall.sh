@@ -1,0 +1,13 @@
+./zipdir.sh AddToCart
+./zipdir.sh Checkout
+./zipdir.sh GetCartItem
+./zipdir.sh GetMenuItem
+./zipdir.sh GetTable
+./zipdir.sh ListMenuItems
+./zipdir.sh ListOrders
+./zipdir.sh ListOrdersInCart
+./zipdir.sh RemoveFromCart
+./zipdir.sh UpdateCart
+./zipdir.sh UpdateOrderState
+./zipdir.sh UpdateTable
+./zipdir.sh uploadMenuItems

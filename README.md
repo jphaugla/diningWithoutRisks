@@ -96,30 +96,32 @@ cd diningWithoutRisks/template
 ./cfnpackage.sh
 ./cfndeploy.sh
 ```
-    4. Upload the menu items
+    4. Upload the menu items json file
 ```bash
  aws s3 cp ../data/menuitems.json s3://$S3_BUCKET
  ```
-    4. Create the code commit and build pipelines
+    5. Execute the program to load the database table from the menuitem.json
+       1. Go to Lambda functions https://console.aws.amazon.com/lambda/home?region=us-east-1#/functions
+       2. Find the UploadMenuItems function and execute the function
+    6. Create the code commit and build pipelines
 ```bash
 ./cfnwebassetsdeploy.sh
 ```
-    5. Create codecommit and git repository for the application code and check in the code.   This will be a separate repository from the current git repository.  Start by getting back to the main directory for git repositories.  Get the repository git repository by going to code commit, finding hte webAssets Dining repository and click on the HTTPS.  Use this copied string to clone the repository.
+    7. Create codecommit and git repository for the application code and check in the code.   This will be a separate repository from the current git repository.  Start by getting back to the main directory for git repositories.  Get the repository git repository by going to code commit, finding hte webAssets Dining repository and click on the HTTPS.  Use this copied string to clone the repository.
 ```bash
 cd ../..
 git clone https://git-codecommit.us-east-1.amazonaws.com/v1/repos/webAssetsDining
 cd webAssetsDining
 ```
 this will reply that repository is empty.  We will fix that now!
-    6.  Copy webassets code to newly created repository 
+    8.  Copy webassets code to newly created repository 
 ```bash
 cp -rp ../diningWithoutRisks/webAssets/package-lock.json ../diningWithoutRisks/webAssets/package.json ../diningWithoutRisks/webAssets/public ../diningWithoutRisks/webAssets/readmeImages ../diningWithoutRisks/webAssets/src ../diningWithoutRisks/webAssets/tsconfig.json .
 git add --all
 git commit -m "initial checking"
 git push origin
 ```
-    7.  Kick off a build on the committed code
-4. Choose **Create stack**.  This will take ~20 minutes to complete.
+    9.  Kick off a build on the committed code
 5. Sign into your application 
     1. The output of the CloudFormation stack creation will provide a CloudFront URL (in the *Outputs* section of your stack details page).  Copy and paste the CloudFront URL into your browser.
     2. You can sign into your application by registering an email address and a password.  Choose **Sign up to explore the demo** to register.  The registration/login experience is run in your AWS account, and the supplied credentials are stored in Amazon Cognito.  *Note: given that this is a demo application, we highly suggest that you do not use an email and password combination that you use for other purposes (such as an AWS account, email, or e-commerce site).*

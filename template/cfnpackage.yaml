@@ -62,6 +62,12 @@ Resources:
                   - !Join 
                     - ''
                     - - !GetAtt 
+                        - TOrders
+                        - Arn
+                      - /*
+                  - !Join 
+                    - ''
+                    - - !GetAtt 
                         - TMenu
                         - Arn
                       - /*
@@ -1179,10 +1185,10 @@ Resources:
     Type: 'AWS::ApiGateway::Method'
     Properties:
       AuthorizationType: AWS_IAM
-      HttpMethod: GET
+      HttpMethod: PUT
       Integration:
         Type: AWS_PROXY
-        IntegrationHttpMethod: PUT
+        IntegrationHttpMethod: POST
         Uri: !Join 
           - ''
           - - 'arn:aws:apigateway:'
@@ -1247,7 +1253,7 @@ Resources:
       ParentId: !GetAtt 
         - AppApi
         - RootResourceId
-      PathPart: menuItem
+      PathPart: menuitem
     Metadata:
       'AWS::CloudFormation::Designer':
         id: e0ffbcc7-5f62-43ac-b377-47ec80a5a71e
@@ -1278,7 +1284,6 @@ Resources:
       RestApiId: !Ref AppApi
       ParentId: !Ref OrdersApiResource 
       PathPart: '{id}'
-      PathPart: bestsellers 
 
   CartApiResource:
     Type: 'AWS::ApiGateway::Resource'

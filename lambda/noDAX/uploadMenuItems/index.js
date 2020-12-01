@@ -38,14 +38,14 @@ getMenuData().then(function(data) {
              menu_items = categories[i] ["menu-items"];
              // uploadMenuItemData(menu_items,category_name);
              for (j = 0; j < menu_items.length; j++) {
-                 console.log("menu items idx[" + j + "] name=" + menu_items[j].name + " id=" + menu_items[j].id);
+              //   console.log("menu items idx[" + j + "] name=" + menu_items[j].name + " id=" + menu_items[j].id);
                  menuId=menu_items[j].id;
                  menuName =  menu_items[j].name;
                  menuDescription =  menu_items[j].description;
                  menuImage= menu_items[j].images;
                  sub_items = menu_items[j] ["sub-items"];
                  for (k = 0; k < sub_items.length; k++) {
-                   console.log("sub items idx[" + k + "] name=" + sub_items[k].name + " id=" + sub_items[k].id);
+                 //  console.log("sub items idx[" + k + "] name=" + sub_items[k].name + " id=" + sub_items[k].id);
                    uploadMenuItemData(sub_items,category_name,menuId,menuName,menuDescription,menuImage);
                  }
                
@@ -91,17 +91,20 @@ function uploadMenuItemData(menu_items,category_name,menuId,menuName,menuDescrip
   console.log("Entering uploadMenuItemData");
   for (var i in menu_items) {
     var menu = menu_items[i];
-    console.log("image is:" + menuImage);
+//    console.log("image is:" + menuImage);
     var fullImage = fullPath + menuImage;
     var category_short;
+    var menuPrice = (Number.parseFloat(menu.price)*.07).toFixed(2);
 //    console.log(menu);
     menu.category_name=category_name;
     menu.fullImage=fullImage;
     menu.menuId=menuId;
     menu.menuName=menuName;
     menu.description=menuDescription;
+    menu.usPrice=menuPrice.toString();
+    // console.log("price is " + menu.price + " and menuPrice is " + menu.usPrice);
     menu.rating=between(1,5);
-    console.log("category name is:" + category_name);
+//   console.log("category name is:" + category_name);
     if (menu.category_name === 'Appeteasers') {
         category_short = 'appeteasers';
     } else if (menu.category_name === "Fino sides") {

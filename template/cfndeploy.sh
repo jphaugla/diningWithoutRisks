@@ -1,1 +1,1 @@
-aws cloudformation deploy --template-file ./packaged-template.out --stack-name ${PROJECT_NAME}-main --capabilities CAPABILITY_NAMED_IAM --parameter-overrides ProjectName=$PROJECT_NAME S3Bucket=$jphmenu-s3-stage-bucket
+aws cloudformation deploy --template-file ./packaged-template.out --stack-name ${PROJECT_NAME}-main --capabilities CAPABILITY_NAMED_IAM --parameter-overrides ProjectName=$PROJECT_NAME S3Bucket=${PROJECT_NAME}-s3-stage-bucket

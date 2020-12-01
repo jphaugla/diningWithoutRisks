@@ -476,6 +476,21 @@ Resources:
     Metadata:
       'AWS::CloudFormation::Designer':
         id: 06a821b7-638e-471c-ab50-51710b73767c
+  FunctionGetBestSellerPermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref FunctionGetBestSeller
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join 
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref AppApi
+          - /*
   FunctionGetTablePermissions:
     Type: 'AWS::Lambda::Permission'
     Properties:

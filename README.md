@@ -22,9 +22,6 @@ This sample code is made available under a modified MIT license. See the LICENSE
   - [Amazon DynamoDB](#amazon-dynamodb)
   - [Amazon API Gateway](#amazon-api-gateway)
   - [AWS Lambda](#aws-lambda)
-  - [Amazon ElastiCache for Redis](#amazon-elasticache-for-redis)
-  - [Amazon Neptune](#amazon-neptune)
-  - [Amazon ElasticSearch](#amazon-elasticsearch)
   - [AWS IAM](#aws-iam)
   - [Amazon Cognito](#amazon-cognito)
   - [Amazon Cloudfront and Amazon S3](#amazon-cloudfront-and-amazon-s3)
@@ -76,13 +73,15 @@ You can choose to customize the template to create your own bookstore, modify it
 To get the AWS DiningWithoutRisks Demo App up and running in your own AWS account, follow these steps (if you do not have an AWS account, please see [How do I create and activate a new Amazon Web Services account?](https://aws.amazon.com/premiumsupport/knowledge-center/create-and-activate-aws-account/)):
 This app is not completely automated.  Several scripts are needed.  The scripts share a common set of environment variables and run with cloudformation.
 
+###  Initial Steps
 1. Log into the [AWS console](https://console.aws.amazon.com/) if you are not already
 2. Get this github repository 
 ```bash
 git clone https://github.com/jphaugla/diningWithoutRisks.git
 cd diningWithoutRisks/template
 ```
-3. Run the scripts to create the application
+
+###  Run the scripts to create the application
     1. Set environment variables by editing and running environment script
 ```bash
 . ./setEnvironment.sh
@@ -125,7 +124,7 @@ git push origin
        make sure to add these files with git add and to commit and push the change
     10.  Kick off a build on the committed code
        Go to the code build and edit the build script for the new environment
-5. Sign into your application 
+### Sign into your application 
     1. The output of the CloudFormation stack creation will provide a CloudFront URL (in the *Outputs* section of your stack details page).  Copy and paste the CloudFront URL into your browser.
     2. You can sign into your application by registering an email address and a password.  Choose **Sign up to explore the demo** to register.  The registration/login experience is run in your AWS account, and the supplied credentials are stored in Amazon Cognito.  *Note: given that this is a demo application, we highly suggest that you do not use an email and password combination that you use for other purposes (such as an AWS account, email, or e-commerce site).*
     3. Once you provide your credentials, you will receive a verification code at the email address you provided. Upon entering this verification code, you will be signed into the application.
@@ -573,37 +572,6 @@ customerId: string
 
 &nbsp;
 
-**Other Lambda functions**
-There are a few other Lambda functions used to make the AWS DiningWithoutRisks Demo App work, and they are listed here:
-
-1. Search - Lambda function that returns a list of books based on provided search parameters in the request.
-2. updateSearchCluster - Lambda function that updates the ElasticSearch cluster when new books are added to the store.
-3. updateBestsellers - Updates Leaderboard via the ElastiCache for Redis cluster as orders are placed.
-
-&nbsp;
-
-### Amazon ElastiCache for Redis
-
-Amazon ElastiCache for Redis is used to provide the best sellers/leaderboard functionality.  In other words, the books that are the most ordered will be shown dynamically at the top of the best sellers list. 
-
-For the purposes of creating the leaderboard, the AWS DiningWithoutRisks Demo App utilized [ZINCRBY](https://redis.io/commands/zincrby), which *“Increments the score of member in the sorted set stored at key byincrement. If member does not exist in the sorted set, it is added with increment as its score (as if its previous score was 0.0). If key does not exist, a new sorted set with the specified member as its sole member is created.”*
-
-The information to populate the leaderboard is provided from DynamoDB via DynamoDB Streams.  Whenever an order is placed (and subsequently created in the **Orders** table), this is streamed to Lambda, which updates the cache in ElastiCache for Redis.  The Lambda function used to pass this information is **UpdateBestSellers**. 
-
-&nbsp;
-
-### Amazon Neptune
-
-Neptune provides a social graph that consists of users, books.  Recommendations are only provided for books that have been purchased (i.e. in the list of orders). The “top 5” book recommendations are shown on the bookstore homepage. 
-
-&nbsp;
-
-### Amazon ElasticSearch
-
-Amazon Elasticsearch Service powers the search capability in the bookstore web application, available towards the top of every screen in a search bar.  Users can search by title, author, and category. The template creates a search domain in the Elasticsearch service.
-
-It is important that a service-linked role is created first (included in the CloudFormation template).
-
 &nbsp;
 
 ### AWS IAM
@@ -681,17 +649,15 @@ Similar to CloudWatch, the capabilities provided by CodeCommit, CodePipeline, an
 
 ## Considerations for demo purposes
 
-1. In order to make the AWS DiningWithoutRisks Demo App an effective demonstration from the moment it is created, the CloudFormation template kicks off a Lambda function we wrote to pre-load a list of books into the restaurant menu (the Books table in DynamoDB).  In the same way, we used a Lambda function to pre-load sample friends (into Neptune) and manually populated the list of Best Sellers (on the front page only).  This enables you to sign up as a new user and immediately see what the running store would look like, including recommendations based on what friends have purchased and what the best-selling books section does.  
+1. In order to make the AWS DiningWithoutRisks Demo App an effective demonstration from the moment it is created, udFormation template kicks off a Lambda function we wrote to pre-load a list of books into the restaurant menu (the Books table in DynamoDB).  In the same way, we used a Lambda function to pre-load sample friends (into Neptune) and manually populated the list of Best Sellers (on the front page only).  This enables you to sign up as a new user and immediately see what the running store would look like, including recommendations based on what friends have purchased and what the best-selling books section does.  
 
-2. You will notice that the Past orders and Best sellers pages are empty at first run.  These are updated as soon as an order is placed. 
+2. You will notice that the Past orders page is empty at first run.  These are updated as soon as an order is placed. 
 
-3. For the purposes of this demo, we did not include a method to add or remove friends, and decided that every new user will be friends with everyone else (not the most realistic, but effective for this demo).  You are welcome to play around with changing this, adding friend control functionality, or manually editing friendships via the bookstore-friends-edges.csv file.
+3. Web assets (pages, images, etc.) are pulled from a the github repo via the CloudFormation template to create the frontend for the AWS DiningWithoutRisks Demo App.  When building your own web application you will likely pull from your own S3 buckets.  If you customize the lambda functions, you will want to store these separately, as well.
 
-4. Web assets (pages, images, etc.) are pulled from a public S3 bucket via the CloudFormation template to create the frontend for the AWS DiningWithoutRisks Demo App.  When building your own web application (or customizing this one), you will likely pull from your own S3 buckets.  If you customize the lambda functions, you will want to store these separately, as well.
+4. Checkout is a simplified demo experience that customers can take and implement a real-world payment processing platform.  Similarly, the *View Receipt* button after purchase is non-functional, meant to demonstrate how you can add on to the app.
 
-5. Checkout is a simplified demo experience that customers can take and implement a real-world payment processing platform.  Similarly, the *View Receipt* button after purchase is non-functional, meant to demonstrate how you can add on to the app.
-
-6. The CloudFormation template referenced in #2 of the [Getting started](#getting-started) section is everything you need to create the full-stack application.  However, when the application is newly created, or hasn't been used in some time, it may take a few extra seconds to run the Lamdba functions, which increases the latency of operations like search and listing books.  If you want to maintain low latency for your app, [this deeplink](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=MyDiningWithoutRisks&templateURL=https://s3.amazonaws.com/aws-bookstore-demo/master-fullstack-with-lambda-triggers.template) creates an identical stack but with additional triggers to keep the Lamdba functions "warm."  Given that these triggers make the Lamdba functions run more frequently (every 10 minutes, on a schedule), this will add a small amount to the overall cost to run the application.  The benefit is a more responsive application even when the Lamdba functions are not being regularly called by user activity.
+5. The CloudFormation template referenced in #2 of the [Getting started](#getting-started) section is everything you need to create the full-stack application.  However, when the application is newly created, or hasn't been used in some time, it may take a few extra seconds to run the Lamdba functions, which increases the latency of operations like search and listing books.  If you want to maintain low latency for your app, [this deeplink](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=MyDiningWithoutRisks&templateURL=https://s3.amazonaws.com/aws-bookstore-demo/master-fullstack-with-lambda-triggers.template) creates an identical stack but with additional triggers to keep the Lamdba functions "warm."  Given that these triggers make the Lamdba functions run more frequently (every 10 minutes, on a schedule), this will add a small amount to the overall cost to run the application.  The benefit is a more responsive application even when the Lamdba functions are not being regularly called by user activity.
 
 &nbsp;
 
@@ -702,11 +668,7 @@ Similar to CloudWatch, the capabilities provided by CodeCommit, CodePipeline, an
 ## Known limitations
 
 * The application was written for demonstration purposes and not for production use.
-* Orders are backed by DynamoDB, but no mechanism exists to recreate the best sellers list in the unlikely scenario of a Redis failure.
 * Upon the first use of a Lambda function, cold start times in a VPC can be slow. Once the Lambda function has been warmed up, performance will improve.  See #6 in [Considerations for demo purposes](#considerations-for-demo-purposes) for more information.
-* The application is not currently designed for for high availability. You can increase the availability of the application by configuring the Amazon Elasticsearch, Amazon Neptune, and Amazon ElastiCache clusters with multiple instances across multiple AZs.
-* The application enables multiple users to sign into the application but the social graph is single user. As a result, different users will see the same social graph. Further, when new books are purchased, that state is not reflected in the social graph.
-* There are some network errors observed on Firefox.  We are looking into this.
 
 &nbsp;
 

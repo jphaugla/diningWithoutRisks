@@ -107,33 +107,64 @@ cd template
   * Click Test again to execute
 
 #### Create the code commit and build pipelines
+This is creating the code commit and cloud front pieces needed for the web application.
 ```bash
 ./cfnwebassetsdeploy.sh
 ```
+Check the outputs from the {project-name}-distribution stack for important URLS
 #### Create codecommit and git repository for the application code and check in the code.  
 
-* This will be a separate repository from the current git repository.  
+* This will be a separate repository from the current git repository that is backed by AWS code commit instead of git. 
 * Start by getting back to the main directory for git repositories.
-* Get the repository git repository by going to code commit, finding the webAssets Dining repository and click on the HTTPS.  
+* Get the repository git repository by going to code commit, finding the webAssets Dining repository and click on the HTTPS copy button. ![code commit](readmeImages/codeCommitURL.jpg)  
 * Use this copied string to clone the repository.
 ```bash
 cd ../..
-git clone https://git-codecommit.us-east-1.amazonaws.com/v1/repos/webAssetsDining
+git clone <paste string here>
+#  this is example of string git clone https://git-codecommit.us-east-1.amazonaws.com/v1/repos/webAssetsDining
+# this will reply that repository is empty.  We will fix that in a subsequent step
 cd webAssetsDining
 ```
-this will reply that repository is empty.  We will fix that now!
+
 #### Copy webassets code to newly created repository 
 ```bash
-cp -rp ../diningWithoutRisks/webAssets/package-lock.json ../diningWithoutRisks/webAssets/package.json ../diningWithoutRisks/webAssets/public ../diningWithoutRisks/webAssets/readmeImages ../diningWithoutRisks/webAssets/src ../diningWithoutRisks/webAssets/tsconfig.json
+cp -rp ../diningWithoutRisks/webAssets/package-lock.json ../diningWithoutRisks/webAssets/package.json ../diningWithoutRisks/webAssets/public ../diningWithoutRisks/webAssets/readmeImages ../diningWithoutRisks/webAssets/src ../diningWithoutRisks/webAssets/tsconfig.json .
 git add --all
-git commit -m "initial checking"
+git commit -m "initial check-in"
 git push origin
 ```
-    9. Modify two files that must be changed for the new environment: src/config.ts and src/config.js
-       make sure to add these files with git add and to commit and push the change
-    10.  Kick off a build on the committed code
-       Go to the code build and edit the build script for the new environment
-### Sign into your application 
+#### Modify two files that must be changed for the new environment: src/config.ts and src/config.js
+* must change config.ts to have the correct values.  Need to look up the correct values for apiGateway and Cognito 
+  * Can find Api URL by going to Amazon API service
+  * Click on the {project-name}-DiningMenu API
+  * ON left-most tab, click on Dashboard
+  * Find the API URL in the header for this page ![API URL](readmeImages/APIURL.jpg)
+  * this API_URL is needed in both config.ts and config.js  
+  * Find the Cognito parameters going to the Amazon Cognito Service
+  * Click on Manage User Pools
+  * Click on the {project-name]user-pool
+  * Use the "Pool ID" on General settings for config.ts and config.js "USER_POOL_ID"
+  * On the left side, click on Sample code.  Use the highlighted "Identity Pool ID" for config.ts and config.js "IDENTITY_POOL_ID"  
+  * On the left most side clid and "App Clients" and use the "App client id" for the config.ts and config.js "APP_CLIENT_ID"
+  *  make sure to add these files with git add and to commit and push the change
+#### modify the buildspec file  
+* need to update the changed variables in this file src/buildspecs/build-with-cache.yml
+  * change the s3 artifacts bucket name for this environment using the ArtifactsBucket output from the {project-name}-distribution template
+    * be careful not to use the s3 prefix and the trailing /
+  * use the correct cloudfront distribution id as well.   
+```bash
+git add src/config.ts src/config.js buildspecs/build-with-cache.yml
+git commit -m "fix config files"
+git push origin
+```     
+#### Kick off a build on the committed code
+Need to change the build script fo the application.
+* Go to Code Commit service
+* ON left tab open the Build, under "Build Project" select {project-name}-distribution 
+* it probably is already started, but if not, click "Start build"
+* wait for the build to finish  (10 minutes?)
+
+### Sign into the application 
     1. The output of the CloudFormation stack creation will provide a CloudFront URL (in the *Outputs* section of your stack details page).  Copy and paste the CloudFront URL into your browser.
     2. You can sign into your application by registering an email address and a password.  Choose **Sign up to explore the demo** to register.  The registration/login experience is run in your AWS account, and the supplied credentials are stored in Amazon Cognito.  *Note: given that this is a demo application, we highly suggest that you do not use an email and password combination that you use for other purposes (such as an AWS account, email, or e-commerce site).*
     3. Once you provide your credentials, you will receive a verification code at the email address you provided. Upon entering this verification code, you will be signed into the application.

@@ -162,9 +162,19 @@ Need to change the build script fo the application.
 * Go to Code Commit service
 * ON left tab open the Build, under "Build Project" select {project-name}-distribution 
 * it probably is already started, but if not, click "Start build"
-* wait for the build to finish  (10 minutes?)
+* wait for the build to finish  (5 minutes?)
+* if get error that can't find the build-with-cache.yml file, click Edit on the {project-name}-distribution and choose buildspec
+* Click on "Insert build Commands" and click on click on "Switch to Editor"
+* paste the content of src/buildspecs/build-with-cache.yml into the editor and save
 
+#### Fix CloudFront Distribution
+* Go to CloudFront Distrbution service
+* Find the CloudFront Distribution and select it
+* Click on Origins and Origin Groups
+* Select the artifacts bucket and click edit
+* Click on the "Yes, Update Bucket Policy" radion button and click "Yes, Edit"
 ### Sign into the application 
+
     1. The output of the CloudFormation stack creation will provide a CloudFront URL (in the *Outputs* section of your stack details page).  Copy and paste the CloudFront URL into your browser.
     2. You can sign into your application by registering an email address and a password.  Choose **Sign up to explore the demo** to register.  The registration/login experience is run in your AWS account, and the supplied credentials are stored in Amazon Cognito.  *Note: given that this is a demo application, we highly suggest that you do not use an email and password combination that you use for other purposes (such as an AWS account, email, or e-commerce site).*
     3. Once you provide your credentials, you will receive a verification code at the email address you provided. Upon entering this verification code, you will be signed into the application.

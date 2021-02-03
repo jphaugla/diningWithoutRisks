@@ -37,13 +37,14 @@ This sample code is made available under a modified MIT license. See the LICENSE
 
 ## Overview
 
-The goal of the AWS DiningWithoutRisks Demo App is to provide a fully-functional web application that utilizes multiple purpose-built AWS databases and native AWS components like Amazon API Gateway and AWS CodePipeline. Increasingly, modern web apps are built using a multitude of different databases. Developers break their large applications into individual components and select the best database for each job. Let's consider the AWS DiningWithoutRisks Demo App as an example. The app contains multiple experiences such a shopping cart, product search, recommendations, and a top sellers list. For each of these use cases, the app makes use of a purpose-built database so the developer never has to compromise on functionality, performance, or scale.
+The goal of the AWS DiningWithoutRisks Demo App is to provide a fully-functional web application that utilizes multiple purpose-built AWS databases and native AWS components like Amazon API Gateway and AWS CodePipeline. Increasingly, modern web apps are built using a multitude of different databases. Developers break their large applications into individual components and select the best database for each job. Let's consider the AWS DiningWithoutRisks Demo App as an example. This application focuses on DynamoDB.
 
 The provided CloudFormation template automates the entire creation and deployment of the AWS DiningWithoutRisks Demo App.  The template includes the following components:
 
 **Database components**
 
 * restaurant menu/shopping cart - Amazon DynamoDB offers fast, predictable performance for the key-value lookups needed in the restaurant menu, as well as the shopping cart and order history.  In this implementation, we have unique identifiers, titles, descriptions, quantities, locations, and price.
+
 **Application components**
 
 * Serverless service backend – Amazon API Gateway powers the interface layer between the frontend and backend, and invokes serverless compute with AWS Lambda.  
@@ -53,8 +54,6 @@ The provided CloudFormation template automates the entire creation and deploymen
 
 * Continuous deployment code pipeline – AWS CodePipeline and AWS CodeBuild help you build, test, and release your application code. 
 * Serverless web application – Amazon CloudFront and Amazon S3 provide a globally-distributed application. 
-
-You can choose to customize the template to create your own bookstore, modify it to make a different type of store, or change it to make a completely different type of web application.  
 
 &nbsp;
 
@@ -82,38 +81,48 @@ cd diningWithoutRisks/template
 ```
 
 ###  Run the scripts to create the application
-    1. Set environment variables by editing and running environment script
+
+#### Set environment variables by editing and running environment script
 ```bash
+cd template
 . ./setEnvironment.sh
 ```
-    2. Create S3 bucket to stage git code
+#### Create S3 bucket to stage git code
 ```bash
-./cfn3deploy.sh
+./cfns3deploy.sh
 ```
-    3. Deploy first set of objects.  Watch in cloudformation for successful completion.
+#### Deploy first set of objects.  Watch in cloudformation for successful completion.
 ```bash
 ./cfnpackage.sh
 ./cfndeploy.sh
 ```
-    4. Upload the menu items json file
+#### Upload the menu items json file
 ```bash
  aws s3 cp ../data/menuitems.json s3://$S3_BUCKET
  ```
-    5. Execute the program to load the database table from the menuitem.json
-       1. Go to Lambda functions https://console.aws.amazon.com/lambda/home?region=us-east-1#/functions
-       2. Find the UploadMenuItems function and execute the function
-    6. Create the code commit and build pipelines
+#### Execute the program to load the database table from the menuitem.json
+* Go to Lambda functions https://console.aws.amazon.com/lambda/home?region=us-east-1#/functions
+* Find the UploadMenuItems function and execute the function.  
+  * Click Test and create new event with any name 
+  * Click Test again to execute
+
+#### Create the code commit and build pipelines
 ```bash
 ./cfnwebassetsdeploy.sh
 ```
-    7. Create codecommit and git repository for the application code and check in the code.   This will be a separate repository from the current git repository.  Start by getting back to the main directory for git repositories.  Get the repository git repository by going to code commit, finding hte webAssets Dining repository and click on the HTTPS.  Use this copied string to clone the repository.
+#### Create codecommit and git repository for the application code and check in the code.  
+
+* This will be a separate repository from the current git repository.  
+* Start by getting back to the main directory for git repositories.
+* Get the repository git repository by going to code commit, finding the webAssets Dining repository and click on the HTTPS.  
+* Use this copied string to clone the repository.
 ```bash
 cd ../..
 git clone https://git-codecommit.us-east-1.amazonaws.com/v1/repos/webAssetsDining
 cd webAssetsDining
 ```
 this will reply that repository is empty.  We will fix that now!
-    8.  Copy webassets code to newly created repository 
+#### Copy webassets code to newly created repository 
 ```bash
 cp -rp ../diningWithoutRisks/webAssets/package-lock.json ../diningWithoutRisks/webAssets/package.json ../diningWithoutRisks/webAssets/public ../diningWithoutRisks/webAssets/readmeImages ../diningWithoutRisks/webAssets/src ../diningWithoutRisks/webAssets/tsconfig.json
 git add --all

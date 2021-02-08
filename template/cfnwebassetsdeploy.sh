@@ -1,0 +1,1 @@
+aws cloudformation deploy --template-file ./continuous-deployment.yaml --stack-name ${PROJECT_NAME}-distribution --parameter-overrides CodeCommitRepoName=webAssetsDining --capabilities CAPABILITY_NAMED_IAM

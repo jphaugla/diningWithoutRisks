@@ -172,7 +172,8 @@ Need to change the build script fo the application.
 * Find the CloudFront Distribution and select it
 * Click on Origins and Origin Groups
 * Select the artifacts bucket and click edit
-* Click on the "Yes, Update Bucket Policy" radion button and click "Yes, Edit"
+* Click on the "Yes, Update Bucket Policy" radio button and click "Yes, Edit"
+
 ### Sign into the application 
 
     1. The output of the CloudFormation stack creation will provide a CloudFront URL (in the *Outputs* section of your stack details page).  Copy and paste the CloudFront URL into your browser.

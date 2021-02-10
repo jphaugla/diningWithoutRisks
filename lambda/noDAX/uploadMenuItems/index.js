@@ -146,7 +146,7 @@ function uploadMenuItemData(menu_items,category_name,menuId,menuName,menuDescrip
 
 // Batch write menuItems to DynamoDB
 function putItem(items_array) {
-  var tableName = "jphmenu-Menu"; // [ProjectName]-Books
+  var tableName = process.env.TABLE_NAME
   var params = {
     RequestItems: {
       [tableName]: items_array

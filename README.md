@@ -84,7 +84,6 @@ cd diningWithoutRisks/template
 
 #### Set environment variables by editing and running environment script
 ```bash
-cd template
 . ./setEnvironment.sh
 ```
 #### Create S3 bucket to stage git code
@@ -142,10 +141,13 @@ git push origin
   * this API_URL is needed in both config.ts and config.js  
   * Find the Cognito parameters going to the Amazon Cognito Service
   * Click on Manage User Pools
-  * Click on the {project-name]user-pool
-  * Use the "Pool ID" on General settings for config.ts and config.js "USER_POOL_ID"
-  * On the left side, click on Sample code.  Use the highlighted "Identity Pool ID" for config.ts and config.js "IDENTITY_POOL_ID"  
-  * On the left most side clid and "App Clients" and use the "App client id" for the config.ts and config.js "APP_CLIENT_ID"
+  * Click on the {project-name}user-pool
+  * Use the "Pool ID" on General settings for config.ts and config.js "USER_POOL_ID" ![poolID](readmeImages/poolID.jpg)
+  * On the left most side click on "App Clients" and use the "App client id" for the config.ts and config.js "APP_CLIENT_ID"
+  * Next need to get the IDENTIY_POOL_ID from Cognito
+  * On the top left, click on "Federated Identities"  ![fedID](readmeImages/FedIdentitites.jpg)
+  * Click on "{project-name}Identity"  
+  * On the left side, click on Sample code.  Use the highlighted "Identity Pool ID" for config.ts and config.js "IDENTITY_POOL_ID"  ![IdentityPoolID](readmeImages/IdentityPoolID.jpg)
   *  make sure to add these files with git add and to commit and push the change
 #### modify the buildspec file  
 * need to update the changed variables in this file src/buildspecs/build-with-cache.yml
